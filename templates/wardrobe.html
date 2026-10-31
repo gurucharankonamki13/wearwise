@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StyleMatrix – Smart Wardrobe & Curated Outfit Generator</title>
+    <link rel="stylesheet" href="/static/wardrobe.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;1,600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Premium Header -->
+    <header class="navbar">
+        <div class="container nav-content">
+            <div class="brand-group">
+                <h1>🌿 StyleMatrix</h1>
+                <p>Curated Wardrobe & Smart Outfit Combination Engine</p>
+            </div>
+            <div class="nav-actions">
+                <button class="btn btn-secondary" onclick="clearAll()">🗑️ Clear All</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container main-layout">
+        <!-- Stats Banner in Beige & Forest Green -->
+        <section class="stats-banner">
+            <div class="stat-card">
+                <span class="stat-num" id="statTops">0</span>
+                <span class="stat-label">Tops / Shirts</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="statTanks">0</span>
+                <span class="stat-label">Inner Tank Tops</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="statBottoms">0</span>
+                <span class="stat-label">Bottoms</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="statShoes">0</span>
+                <span class="stat-label">Footwear</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-num" id="statLayers">0</span>
+                <span class="stat-label">Jackets / Layers</span>
+            </div>
+            <div class="stat-card highlight">
+                <span class="stat-num" id="statTotalCombos">0</span>
+                <span class="stat-label">Possible Outfits</span>
+            </div>
+        </section>
+
+        <!-- Main Workspace (Left panel is compact & sticky; no expanding empty space) -->
+        <div class="workspace-grid">
+            <!-- Left Column: Add Clothes Panel -->
+            <aside class="card add-item-panel">
+                <h2>📸 Add to Wardrobe</h2>
+                <p class="subtitle">Upload or photograph clothing pieces. Category and colors are detected automatically.</p>
+
+                <!-- Photo Mode Switcher -->
+                <div class="photo-mode-toggle">
+                    <button type="button" class="tab-btn active" id="btnModeUpload" onclick="setPhotoMode('upload')">📁 Upload Photo</button>
+                    <button type="button" class="tab-btn" id="btnModeCamera" onclick="setPhotoMode('camera')">📷 Webcam</button>
+                </div>
+
+                <form id="addItemForm" onsubmit="handleAddItem(event)">
+                    <!-- Upload Input -->
+                    <div id="uploadInputContainer" class="form-group">
+                        <label>Select Clothing Image:</label>
+                        <input type="file" id="clothingPhoto" accept="image/*" class="file-input" onchange="handleImageLoaded(this)">
+                    </div>
+
+                    <!-- Webcam Input -->
+                    <div id="cameraInputContainer" class="form-group hidden">
+                        <div class="camera-wrapper">
+                            <video id="webcamVideo" autoplay playsinline></video>
+                        </div>
+                        <div class="camera-actions">
+                            <button type="button" class="btn btn-secondary btn-sm" onclick="startCamera()">Turn On Camera</button>
+                            <button type="button" class="btn btn-primary btn-sm" onclick="takeSnapshot()">📸 Capture</button>
+                        </div>
+                        <input type="hidden" id="cameraDataInput">
+                    </div>
+
+                    <!-- INTERACTIVE PRECISION COLOR PICKER CANVAS -->
+                    <div id="pickerContainer" class="picker-box hidden">
+                        <div class="picker-header">
+                            <span>🎯 Click Fabric to Pick Exact Color</span>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="imagePickerCanvas"></canvas>
+                        </div>
+                        <div class="picker-status-row">
+                            <div class="color-swatch-preview" id="previewSwatch"></div>
+                            <div class="picker-meta">
+                                <strong id="pickedHexLabel">#FFFFFF</strong>
+                                <span id="pickedNameLabel">White</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="pickedHex" name="hex" value="">
+                    </div>
+
+                    <!-- Live AI Auto-Detection Feedback Box -->
+                    <div id="detectionBox" class="detection-alert hidden">
+                        <span id="detectionText">✨ Analyzing image...</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Item Name:</label>
+                        <input type="text" id="itemName" placeholder="e.g., Ribbed White Tank Top" required oninput="checkNameKeywords(this.value)">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Category:</label>
+                        <select id="itemCategory" onchange="markCategoryManual()">
+                            <option value="auto">✨ Auto-Detect from Image</option>
+                            <option value="Topwear">Topwear (Shirts, T-Shirts, Polos)</option>
+                            <option value="Inner Layer (Tank Top)">🎽 Inner Layer (Tank Top - Strictly for Layering)</option>
+                            <option value="Bottomwear">Bottomwear (Jeans, Pants, Chinos)</option>
+                            <option value="Footwear">Footwear (Sneakers, Shoes, Boots)</option>
+                            <option value="Outerwear (Layer)">Outerwear (Jackets, Blazers, Coats)</option>
+                        </select>
+                        <small class="category-hint">💡 Tank tops are strictly inner layers; they only combine under open shirts or jackets.</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Primary Color (or click Eyedropper above):</label>
+                        <select id="itemColor">
+                            <option value="auto">✨ Auto-Detect from Photo</option>
+                            <option value="White">White</option>
+                            <option value="Black">Black</option>
+                            <option value="Grey">Grey</option>
+                            <option value="Navy / Denim">Navy / Denim</option>
+                            <option value="Beige / Khaki">Beige / Khaki</option>
+                            <option value="Olive / Green">Olive / Green</option>
+                            <option value="Brown">Brown</option>
+                            <option value="Red / Crimson">Red / Crimson</option>
+                            <option value="Pastel / Light">Pastel / Light</option>
+                            <option value="Yellow / Orange">Yellow / Orange</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Section / Occasion:</label>
+                        <select id="itemOccasion">
+                            <option value="auto">✨ Auto-Detect from Photo</option>
+                            <option value="Casual">Casual</option>
+                            <option value="Formal">Formal</option>
+                            <option value="Semi-Formal">Semi-Formal</option>
+                            <option value="Party">Party</option>
+                            <option value="Athletic">Athletic</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block" id="btnAddItem">➕ Add Item to Closet</button>
+                </form>
+            </aside>
+
+            <!-- Right Column: Tabs (Outfits vs Closet) -->
+            <section class="main-display">
+                <div class="display-tabs">
+                    <button class="nav-tab active" id="tabBtnOutfits" onclick="switchDisplayTab('outfits')">👔 Generated Outfits</button>
+                    <button class="nav-tab" id="tabBtnCloset" onclick="switchDisplayTab('closet')">🧥 My Closet</button>
+                </div>
+
+                <!-- TAB: OUTFITS -->
+                <div id="tabOutfitsContent" class="tab-pane">
+                    <!-- Filters Toolbar -->
+                    <div class="card toolbar">
+                        <div class="filter-item">
+                            <label>Occasion:</label>
+                            <select id="filterOccasion" onchange="loadOutfits()">
+                                <option value="All">All Occasions</option>
+                                <option value="Casual">Casual</option>
+                                <option value="Formal">Formal</option>
+                                <option value="Semi-Formal">Semi-Formal</option>
+                                <option value="Party">Party</option>
+                            </select>
+                        </div>
+                        <div class="filter-item">
+                            <label>Min Match Score: <strong id="scoreVal">70%</strong></label>
+                            <input type="range" id="filterScore" min="50" max="95" value="70" step="5" oninput="updateScoreVal(this.value)">
+                        </div>
+                        <div class="filter-item checkbox-item">
+                            <label><input type="checkbox" id="filterTanks" checked onchange="loadOutfits()"> 🎽 Tank Top Layering</label>
+                        </div>
+                        <div class="filter-item checkbox-item">
+                            <label><input type="checkbox" id="filterLayers" checked onchange="loadOutfits()"> 🧥 Jackets / Layers</label>
+                        </div>
+                    </div>
+
+                    <!-- Medium-Sized Aesthetic Outfits Grid -->
+                    <div id="outfitsContainer" class="outfits-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB: CLOSET -->
+                <div id="tabClosetContent" class="tab-pane hidden">
+                    <div id="closetContainer" class="closet-grid">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- EXPANDED OUTFIT LIGHTBOX MODAL (Click to View Large) -->
+    <div id="outfitModal" class="modal-backdrop hidden" onclick="handleModalBackdropClick(event)">
+        <div class="modal-card">
+            <button class="modal-close-btn" onclick="closeOutfitModal()" title="Close">&times;</button>
+            <div id="modalContent">
+                <!-- Injected dynamically on click -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let photoMode = 'upload';
+        let mediaStream = null;
+        let activeImageObject = null;
+        let currentOutfitsCache = [];
+        let categoryManuallySelected = false;
+
+        function markCategoryManual() {
+            const val = document.getElementById('itemCategory').value;
+            categoryManuallySelected = (val !== 'auto');
+        }
+
+        function checkNameKeywords(name) {
+            const lower = name.toLowerCase();
+            if (lower.includes('tank') || lower.includes('vest') || lower.includes('sleeveless') || lower.includes('inner')) {
+                document.getElementById('itemCategory').value = 'Inner Layer (Tank Top)';
+                categoryManuallySelected = true;
+            } else if (lower.includes('pant') || lower.includes('jean') || lower.includes('trouser') || lower.includes('chino') || lower.includes('short')) {
+                document.getElementById('itemCategory').value = 'Bottomwear';
+                categoryManuallySelected = true;
+            } else if (lower.includes('shoe') || lower.includes('sneaker') || lower.includes('boot') || lower.includes('loafer')) {
+                document.getElementById('itemCategory').value = 'Footwear';
+                categoryManuallySelected = true;
+            } else if (lower.includes('jacket') || lower.includes('blazer') || lower.includes('coat') || lower.includes('cardigan')) {
+                document.getElementById('itemCategory').value = 'Outerwear (Layer)';
+                categoryManuallySelected = true;
+            }
+        }
+
+        function setPhotoMode(mode) {
+            photoMode = mode;
+            document.getElementById('btnModeUpload').classList.toggle('active', mode === 'upload');
+            document.getElementById('btnModeCamera').classList.toggle('active', mode === 'camera');
+            document.getElementById('uploadInputContainer').classList.toggle('hidden', mode !== 'upload');
+            document.getElementById('cameraInputContainer').classList.toggle('hidden', mode !== 'camera');
+            if (mode === 'camera' && !mediaStream) {
+                startCamera();
+            }
+        }
+
+        async function startCamera() {
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: { width: 400, height: 300 } });
+                document.getElementById('webcamVideo').srcObject = mediaStream;
+            } catch (err) {
+                alert('Could not access webcam. Please use File Upload mode.');
+            }
+        }
+
+        function takeSnapshot() {
+            const video = document.getElementById('webcamVideo');
+            const offscreenCanvas = document.createElement('canvas');
+            offscreenCanvas.width = video.videoWidth || 400;
+            offscreenCanvas.height = video.videoHeight || 300;
+            const ctx = offscreenCanvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, offscreenCanvas.width, offscreenCanvas.height);
+            const dataUrl = offscreenCanvas.toDataURL('image/jpeg', 0.9);
+            document.getElementById('cameraDataInput').value = dataUrl;
+
+            loadImageToCanvas(dataUrl);
+            triggerAutoDetection();
+        }
+
+        function handleImageLoaded(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                checkNameKeywords(file.name);
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    loadImageToCanvas(e.target.result);
+                    triggerAutoDetection();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function loadImageToCanvas(src) {
+            const container = document.getElementById('pickerContainer');
+            const canvas = document.getElementById('imagePickerCanvas');
+            const ctx = canvas.getContext('2d');
+            const img = new Image();
+
+            img.onload = function() {
+                activeImageObject = img;
+                const maxWidth = 340;
+                const scale = maxWidth / img.width;
+                canvas.width = maxWidth;
+                canvas.height = img.height * scale;
+
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                container.classList.remove('hidden');
+
+                // Sample smart fabric position
+                const sampleX = Math.floor(canvas.width * 0.5);
+                const sampleY = Math.floor(canvas.height * 0.45);
+                samplePixelAt(sampleX, sampleY);
+
+                canvas.onclick = function(e) {
+                    const rect = canvas.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    samplePixelAt(x, y);
+                };
+            };
+            img.src = src;
+        }
+
+        function samplePixelAt(x, y) {
+            const canvas = document.getElementById('imagePickerCanvas');
+            const ctx = canvas.getContext('2d');
+            const pixel = ctx.getImageData(x, y, 1, 1).data;
+            const r = pixel[0], g = pixel[1], b = pixel[2];
+            const hex = rgbToHex(r, g, b);
+
+            document.getElementById('pickedHex').value = hex;
+            document.getElementById('pickedHexLabel').textContent = hex.toUpperCase();
+            document.getElementById('previewSwatch').style.backgroundColor = hex;
+
+            const detectedColor = classifyRGB(r, g, b);
+            document.getElementById('pickedNameLabel').textContent = detectedColor;
+            document.getElementById('itemColor').value = detectedColor;
+
+            if (activeImageObject) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(activeImageObject, 0, 0, canvas.width, canvas.height);
+                
+                ctx.beginPath();
+                ctx.arc(x, y, 12, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, 2 * Math.PI);
+                ctx.strokeStyle = '#1b3b2b';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        function rgbToHex(r, g, b) {
+            return '#' + [r, g, b].map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('');
+        }
+
+        function classifyRGB(r, g, b) {
+            const minC = Math.min(r, g, b);
+            const maxC = Math.max(r, g, b);
+            const diff = maxC - minC;
+
+            // Accurate White/Off-white detection
+            if (minC > 190 && diff < 38) return 'White';
+            if (minC > 215 && diff < 45) return 'White';
+            if (maxC < 45) return 'Black';
+            if (diff < 18) {
+                if (minC > 180) return 'White';
+                if (maxC < 55) return 'Black';
+                return 'Grey';
+            }
+
+            const rn = r / 255, gn = g / 255, bn = b / 255;
+            const max = Math.max(rn, gn, bn), min = Math.min(rn, gn, bn);
+            let h, s, l = (max + min) / 2;
+
+            if (max === min) {
+                h = s = 0;
+            } else {
+                const d = max - min;
+                s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                switch (max) {
+                    case rn: h = (gn - bn) / d + (gn < bn ? 6 : 0); break;
+                    case gn: h = (bn - rn) / d + 2; break;
+                    case bn: h = (rn - gn) / d + 4; break;
+                }
+                h /= 6;
+            }
+            const hDeg = h * 360;
+
+            if (l < 0.16) return 'Black';
+            if (l > 0.85 && s < 0.22) return 'White';
+            if (s < 0.14) return 'Grey';
+            if (hDeg >= 185 && hDeg <= 250) {
+                if (s > 0.20 && l < 0.70) return 'Navy / Denim';
+                if (l >= 0.70) return 'Pastel / Light';
+                return 'Grey';
+            }
+            if (hDeg >= 65 && hDeg <= 165) return 'Olive / Green';
+            if (hDeg >= 25 && hDeg <= 55 && s < 0.60 && l > 0.38) return 'Beige / Khaki';
+            if (hDeg >= 15 && hDeg <= 45 && l < 0.44) return 'Brown';
+            if (hDeg < 20 || hDeg > 338) return 'Red / Crimson';
+            if (hDeg >= 35 && hDeg <= 65) return 'Yellow / Orange';
+            if (l > 0.65 && s > 0.16) return 'Pastel / Light';
+            return 'Grey';
+        }
+
+        async function triggerAutoDetection() {
+            const detectionBox = document.getElementById('detectionBox');
+            const detectionText = document.getElementById('detectionText');
+
+            const formData = new FormData();
+            let hasImage = false;
+
+            if (photoMode === 'upload') {
+                const fileInput = document.getElementById('clothingPhoto');
+                if (fileInput.files.length > 0) {
+                    formData.append('photo', fileInput.files[0]);
+                    hasImage = true;
+                }
+            } else {
+                const cameraData = document.getElementById('cameraDataInput').value;
+                if (cameraData) {
+                    formData.append('camera_data', cameraData);
+                    hasImage = true;
+                }
+            }
+
+            if (!hasImage) return;
+
+            detectionBox.classList.remove('hidden');
+            detectionText.textContent = '✨ Analyzing category & fabric color...';
+
+            try {
+                const res = await fetch('/api/detect', { method: 'POST', body: formData });
+                const data = await res.json();
+                if (data.category) {
+                    // Only update category if user has not manually set it
+                    if (!categoryManuallySelected || document.getElementById('itemCategory').value === 'auto') {
+                        document.getElementById('itemCategory').value = data.category;
+                    }
+                    if (document.getElementById('itemColor').value === 'auto') {
+                        document.getElementById('itemColor').value = data.color;
+                    }
+                    document.getElementById('itemOccasion').value = data.occasion;
+                    detectionText.innerHTML = `✨ <strong>Auto-Detected:</strong> Category: <u>${document.getElementById('itemCategory').value}</u> • Color: <u>${data.color}</u> • Occasion: <u>${data.occasion}</u>`;
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        function updateScoreVal(val) {
+            document.getElementById('scoreVal').textContent = val + '%';
+            loadOutfits();
+        }
+
+        function switchDisplayTab(tab) {
+            document.getElementById('tabBtnOutfits').classList.toggle('active', tab === 'outfits');
+            document.getElementById('tabBtnCloset').classList.toggle('active', tab === 'closet');
+            document.getElementById('tabOutfitsContent').classList.toggle('hidden', tab !== 'outfits');
+            document.getElementById('tabClosetContent').classList.toggle('hidden', tab !== 'closet');
+            if (tab === 'closet') loadCloset();
+            if (tab === 'outfits') loadOutfits();
+        }
+
+        async function updateStats() {
+            const res = await fetch('/api/stats');
+            const data = await res.json();
+            document.getElementById('statTops').textContent = data.tops;
+            document.getElementById('statTanks').textContent = data.tanks || 0;
+            document.getElementById('statBottoms').textContent = data.bottoms;
+            document.getElementById('statShoes').textContent = data.shoes;
+            document.getElementById('statLayers').textContent = data.layers;
+            document.getElementById('statTotalCombos').textContent = data.total_combinations;
+        }
+
+        async function handleAddItem(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btnAddItem');
+            btn.disabled = true;
+            btn.textContent = 'Adding...';
+
+            const formData = new FormData();
+            formData.append('name', document.getElementById('itemName').value);
+            formData.append('category', document.getElementById('itemCategory').value);
+            formData.append('color', document.getElementById('itemColor').value);
+            formData.append('hex', document.getElementById('pickedHex').value);
+            formData.append('occasion', document.getElementById('itemOccasion').value);
+
+            if (photoMode === 'upload') {
+                const fileInput = document.getElementById('clothingPhoto');
+                if (fileInput.files.length > 0) {
+                    formData.append('photo', fileInput.files[0]);
+                }
+            } else {
+                const cameraData = document.getElementById('cameraDataInput').value;
+                if (cameraData) {
+                    formData.append('camera_data', cameraData);
+                }
+            }
+
+            try {
+                const res = await fetch('/api/items', { method: 'POST', body: formData });
+                if (res.ok) {
+                    document.getElementById('itemName').value = '';
+                    document.getElementById('clothingPhoto').value = '';
+                    document.getElementById('cameraDataInput').value = '';
+                    document.getElementById('pickerContainer').classList.add('hidden');
+                    document.getElementById('detectionBox').classList.add('hidden');
+                    document.getElementById('itemCategory').value = 'auto';
+                    document.getElementById('itemColor').value = 'auto';
+                    document.getElementById('itemOccasion').value = 'auto';
+                    categoryManuallySelected = false;
+                    await updateStats();
+                    loadOutfits();
+                } else {
+                    alert('Failed to add item.');
+                }
+            } catch (err) {
+                console.error(err);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '➕ Add Item to Closet';
+            }
+        }
+
+        async function loadOutfits() {
+            const container = document.getElementById('outfitsContainer');
+            container.innerHTML = '<div class="loading">Composing aesthetic color combinations...</div>';
+
+            const minScore = document.getElementById('filterScore').value;
+            const occasion = document.getElementById('filterOccasion').value;
+            const includeLayers = document.getElementById('filterLayers').checked;
+            const includeTanks = document.getElementById('filterTanks').checked;
+
+            const res = await fetch(`/api/outfits?min_score=${minScore}&occasion=${occasion}&include_layers=${includeLayers}&include_tanks=${includeTanks}`);
+            const data = await res.json();
+            currentOutfitsCache = data.outfits || [];
+
+            if (!currentOutfitsCache || currentOutfitsCache.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🌿</div>
+                        <h3>Your Wardrobe is Ready</h3>
+                        <p>${data.message || 'Add your clothing photos on the left to start generating outfits automatically!'}</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = currentOutfitsCache.map((outfit, idx) => {
+                const isCurated = outfit.vibe.includes('Curated Harmony');
+                return `
+                <div class="card outfit-card-medium ${isCurated ? 'curated-card' : ''}" onclick="openOutfitModal(${idx})">
+                    <div class="outfit-card-header">
+                        <div class="badge-row">
+                            <span class="vibe-tag ${isCurated ? 'vibe-curated' : ''}">${outfit.vibe}</span>
+                            <span class="score-badge ${outfit.score >= 90 ? 'score-high' : 'score-med'}">★ ${outfit.score}%</span>
+                        </div>
+                        <span class="click-hint">🔍 Tap to expand</span>
+                    </div>
+
+                    <!-- Medium Sized Aesthetic Piece Row -->
+                    <div class="outfit-preview-row">
+                        ${outfit.tank ? `
+                            <div class="preview-thumb inner-thumb">
+                                <span class="thumb-label">🎽 Inner</span>
+                                <img src="${outfit.tank.image}" alt="${outfit.tank.name}">
+                            </div>
+                        ` : ''}
+
+                        ${outfit.top ? `
+                            <div class="preview-thumb">
+                                <span class="thumb-label">${outfit.tank ? '👕 Shirt' : '👕 Top'}</span>
+                                <img src="${outfit.top.image}" alt="${outfit.top.name}">
+                            </div>
+                        ` : ''}
+
+                        ${outfit.layer ? `
+                            <div class="preview-thumb">
+                                <span class="thumb-label">🧥 Layer</span>
+                                <img src="${outfit.layer.image}" alt="${outfit.layer.name}">
+                            </div>
+                        ` : ''}
+
+                        <div class="preview-thumb">
+                            <span class="thumb-label">👖 Bottom</span>
+                            <img src="${outfit.bottom.image}" alt="${outfit.bottom.name}">
+                        </div>
+
+                        <div class="preview-thumb">
+                            <span class="thumb-label">👟 Shoes</span>
+                            <img src="${outfit.shoes.image}" alt="${outfit.shoes.name}">
+                        </div>
+                    </div>
+
+                    <div class="outfit-card-footer">
+                        <p class="medium-reason">💡 ${outfit.reason}</p>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // ---------------------------------------------------------------------
+        // Modal / Lightbox: View Outfit in Large, High-Res Detail
+        // ---------------------------------------------------------------------
+        function openOutfitModal(idx) {
+            const outfit = currentOutfitsCache[idx];
+            if (!outfit) return;
+
+            const isCurated = outfit.vibe.includes('Curated Harmony');
+            const modal = document.getElementById('outfitModal');
+            const content = document.getElementById('modalContent');
+
+            content.innerHTML = `
+                <div class="modal-header">
+                    <div>
+                        <span class="vibe-tag ${isCurated ? 'vibe-curated' : ''}">${outfit.vibe}</span>
+                        <span class="type-badge">${outfit.type}</span>
+                        <h2>Look #${idx + 1}</h2>
+                    </div>
+                    <div class="score-badge-large ${outfit.score >= 90 ? 'score-high' : 'score-med'}">
+                        ★ ${outfit.score}% Match
+                    </div>
+                </div>
+
+                <div class="modal-reason-box">
+                    <strong>Style & Harmony Breakdown:</strong>
+                    <p>💡 ${outfit.reason}</p>
+                </div>
+
+                <!-- High-Resolution Large Outfit Grid -->
+                <div class="modal-large-items">
+                    ${outfit.tank ? `
+                        <div class="modal-item-card inner-card">
+                            <span class="large-layer-pill">🎽 Inner Layer</span>
+                            <img src="${outfit.tank.image}" alt="${outfit.tank.name}">
+                            <div class="modal-item-info">
+                                <strong>${outfit.tank.name}</strong>
+                                <span>Color: ${outfit.tank.color}</span>
+                                <small>${outfit.tank.occasion}</small>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${outfit.top ? `
+                        <div class="modal-item-card">
+                            <span class="large-layer-pill">${outfit.tank ? '👕 Over Shirt' : '👕 Topwear'}</span>
+                            <img src="${outfit.top.image}" alt="${outfit.top.name}">
+                            <div class="modal-item-info">
+                                <strong>${outfit.top.name}</strong>
+                                <span>Color: ${outfit.top.color}</span>
+                                <small>${outfit.top.occasion}</small>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    ${outfit.layer ? `
+                        <div class="modal-item-card">
+                            <span class="large-layer-pill">🧥 Jacket / Layer</span>
+                            <img src="${outfit.layer.image}" alt="${outfit.layer.name}">
+                            <div class="modal-item-info">
+                                <strong>${outfit.layer.name}</strong>
+                                <span>Color: ${outfit.layer.color}</span>
+                                <small>${outfit.layer.occasion}</small>
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="modal-item-card">
+                        <span class="large-layer-pill">👖 Bottomwear</span>
+                        <img src="${outfit.bottom.image}" alt="${outfit.bottom.name}">
+                        <div class="modal-item-info">
+                            <strong>${outfit.bottom.name}</strong>
+                            <span>Color: ${outfit.bottom.color}</span>
+                            <small>${outfit.bottom.occasion}</small>
+                        </div>
+                    </div>
+
+                    <div class="modal-item-card">
+                        <span class="large-layer-pill">👟 Footwear</span>
+                        <img src="${outfit.shoes.image}" alt="${outfit.shoes.name}">
+                        <div class="modal-item-info">
+                            <strong>${outfit.shoes.name}</strong>
+                            <span>Color: ${outfit.shoes.color}</span>
+                            <small>${outfit.shoes.occasion}</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="closeOutfitModal()">✓ Done</button>
+                </div>
+            `;
+
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeOutfitModal() {
+            document.getElementById('outfitModal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function handleModalBackdropClick(e) {
+            if (e.target.id === 'outfitModal') {
+                closeOutfitModal();
+            }
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeOutfitModal();
+        });
+
+        async function loadCloset() {
+            const container = document.getElementById('closetContainer');
+            const res = await fetch('/api/items');
+            const items = await res.json();
+
+            if (items.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🧥</div>
+                        <h3>Your Closet is Empty</h3>
+                        <p>Upload or photograph your clothes on the left to start building your personal wardrobe!</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="closet-item-card">
+                    <img src="${item.image}" alt="${item.name}">
+                    <div class="closet-item-body">
+                        <strong>${item.name}</strong>
+                        <span class="badge ${item.category.includes('Tank') ? 'badge-tank' : ''}">${item.category}</span>
+                        <div class="color-dot-row">
+                            <span class="color-dot" style="background-color: ${item.hex || '#ffffff'}"></span>
+                            <span class="meta">${item.color} • ${item.occasion}</span>
+                        </div>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteItem('${item.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function deleteItem(id) {
+            await fetch(`/api/items/${id}`, { method: 'DELETE' });
+            await updateStats();
+            loadCloset();
+            loadOutfits();
+        }
+
+        async function clearAll() {
+            if (confirm('Clear all items from your wardrobe?')) {
+                await fetch('/api/clear-all', { method: 'POST' });
+                await updateStats();
+                loadCloset();
+                loadOutfits();
+            }
+        }
+
+        window.onload = async () => {
+            await updateStats();
+            loadOutfits();
+        };
+    </script>
+</body>
+</html>

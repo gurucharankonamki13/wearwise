@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CivicLens – Clear Actions from Public Notices</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <h1>🏛️ CivicLens</h1>
+            <p>Don't just read a public notice. Understand what you need to do.</p>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        <section class="input-section">
+            <h2>Paste Public Notice</h2>
+            <p class="subtitle">Paste complex government, municipal, or university notices below to instantly extract key actions.</p>
+            <textarea id="noticeText" rows="8" placeholder="e.g., Notice: Due to scheduled maintenance by the Water Board on November 15, 2026, water supply will be disrupted in Zone 4. Residents must store adequate water..."></textarea>
+            <button id="analyzeBtn" onclick="analyzeNotice()">Simplify Notice</button>
+        </section>
+
+        <section id="resultsSection" class="results-section hidden">
+            <h2>Actionable Breakdown</h2>
+            
+            <div class="card">
+                <h3>📌 Summary</h3>
+                <p id="summaryOutput">-</p>
+            </div>
+
+            <div class="grid-card">
+                <div class="card">
+                    <h3>⏰ Key Deadlines & Dates</h3>
+                    <ul id="deadlinesOutput"></ul>
+                </div>
+                <div class="card">
+                    <h3>✅ Required Actions</h3>
+                    <ul id="actionsOutput"></ul>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        async function analyzeNotice() {
+            const text = document.getElementById('noticeText').value;
+            const btn = document.getElementById('analyzeBtn');
+            const resultsSection = document.getElementById('resultsSection');
+
+            if (!text.trim()) {
+                alert('Please enter some notice text first.');
+                return;
+            }
+
+            btn.textContent = 'Analyzing...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    document.getElementById('summaryOutput').textContent = data.summary;
+                    
+                    const deadlinesList = document.getElementById('deadlinesOutput');
+                    deadlinesList.innerHTML = data.deadlines.map(d => `<li>${d}</li>`).join('');
+
+                    const actionsList = document.getElementById('actionsOutput');
+                    actionsList.innerHTML = data.actions.map(a => `<li>${a}</li>`).join('');
+
+                    resultsSection.classList.remove('hidden');
+                } else {
+                    alert(data.error || 'Something went wrong.');
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Failed to connect to the server.');
+            } finally {
+                btn.textContent = 'Simplify Notice';
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
+
