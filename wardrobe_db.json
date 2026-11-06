@@ -1,0 +1,116 @@
+{
+  "items": [
+    {
+      "id": "6913aed6",
+      "name": "Navy / Denim & Grey Top",
+      "category": "Bottomwear",
+      "color": "Navy / Denim",
+      "colors": [
+        "Navy / Denim",
+        "Grey"
+      ],
+      "is_multicolor": true,
+      "hex": "#3c4f66",
+      "occasion": "Formal",
+      "image": "/static/uploads/b7bbe4d337d74b8291122a9690b95e07.png",
+      "created_at": 1793959467.9247487,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "36b455e9",
+      "name": "Black Top",
+      "category": "Topwear",
+      "color": "Black",
+      "colors": [
+        "Black"
+      ],
+      "is_multicolor": false,
+      "hex": "#131314",
+      "occasion": "Casual",
+      "image": "/static/uploads/1bbea1277d184bd1a4e7b28c6e13da39.png",
+      "created_at": 1793959487.344232,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "9f241c9d",
+      "name": "White Top",
+      "category": "Inner Layer (Tank Top)",
+      "color": "White",
+      "colors": [
+        "White"
+      ],
+      "is_multicolor": false,
+      "hex": "#dddfe7",
+      "occasion": "Formal",
+      "image": "/static/uploads/cd04a5f5a83b41ceb33c9b6f203869b2.png",
+      "created_at": 1793959506.1442409,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "63217f58",
+      "name": "Brown & Beige / Khaki Top",
+      "category": "Topwear",
+      "color": "Brown",
+      "colors": [
+        "Brown",
+        "Beige / Khaki"
+      ],
+      "is_multicolor": true,
+      "hex": "#664c33",
+      "occasion": "Casual",
+      "image": "/static/uploads/117fe4cf214b4c96a9a3641c583873b1.png",
+      "created_at": 1793959529.0477192,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "3a68341e",
+      "name": "Black & Grey Top",
+      "category": "Bottomwear",
+      "color": "Black",
+      "colors": [
+        "Black",
+        "Grey"
+      ],
+      "is_multicolor": true,
+      "hex": "#201f22",
+      "occasion": "Casual",
+      "image": "/static/uploads/13fbfdaae53a4ae5a83b93769ca38b79.png",
+      "created_at": 1793959560.6291242,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "42d27e3d",
+      "name": "Beige / Khaki & White & Brown Shoes / Sneakers",
+      "category": "Footwear",
+      "color": "Beige / Khaki",
+      "colors": [
+        "Beige / Khaki",
+        "White",
+        "Brown"
+      ],
+      "is_multicolor": true,
+      "hex": "#a99882",
+      "occasion": "Casual",
+      "image": "/static/uploads/86e2fd2371dd453b9bc409e646624dcb.png",
+      "created_at": 1793959572.6682503,
+      "user_email": "reddymukesh271@gmail.com"
+    },
+    {
+      "id": "7d8aca69",
+      "name": "Beige / Khaki & White & Brown Shoes / Sneakers",
+      "category": "Footwear",
+      "color": "Beige / Khaki",
+      "colors": [
+        "Beige / Khaki",
+        "White",
+        "Brown"
+      ],
+      "is_multicolor": true,
+      "hex": "#a99882",
+      "occasion": "Casual",
+      "image": "/static/uploads/f66ce6ee638a4e10bddadcef75b7a6be.png",
+      "created_at": 1793963339.2131245,
+      "user_email": "reddymukesh271@gmail.com"
+    }
+  ]
+}
